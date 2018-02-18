@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Android kotlin enko sample</string>
+    <string name="sign_in_username">Username</string>
+    <string name="sign_in_password">Password</string>
+    <string name="sign_in_button">Sign In</string>
+    <string name="load_image">Load</string>
+</resources>

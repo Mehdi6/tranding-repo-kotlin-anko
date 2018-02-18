@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="usernameEditText" type="id" />
+    <item name="passwordEditText" type="id" />
+    <item name="buttonSignIn" type="id" />
+    <item name="labelText" type="id" />
+    <item name="label2Text" type="id" />
+    <item name="imageId" type="id" />
+    <item name="stars" type="id" />
+
+</resources>
