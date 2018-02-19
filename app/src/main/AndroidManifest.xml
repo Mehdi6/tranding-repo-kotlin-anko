@@ -16,8 +16,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".sign_in.SignInActivity" />
-        <activity android:name=".sign_in.SignInActivity"></activity>
+        <activity android:name=".trending_repos.TrendingReposActivity" />
+        <activity android:name=".trending_repos.TrendingReposActivity"></activity>
     </application>
 
 </manifest>
