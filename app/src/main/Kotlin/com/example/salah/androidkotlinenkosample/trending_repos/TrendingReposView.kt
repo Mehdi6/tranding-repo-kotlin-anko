@@ -19,38 +19,27 @@ data class MyData(val total_count: Int, var incomplete_results: Boolean, val ite
 
 class TrendingReposView: AnkoComponent<TrendingReposActivity> {
     override fun createView(ui: AnkoContext<TrendingReposActivity>) = with(ui){
-                relativeLayout {
-                    lparams(width = matchParent, height = matchParent)
-                    val lv = listView().lparams{
-                        alignParentTop()
-                    }
+            relativeLayout {
+                lparams(width = matchParent, height = matchParent)
+                val lv = listView().lparams {
+                    alignParentTop()
+                }
 
-                    val poleAd = PoleAdapter(lv)
-                    lv.adapter = poleAd
+                val repoListingAdapter = RepoListingAdapter(lv)
+                lv.adapter = repoListingAdapter
 
-                    button {
-                        id = java.util.Random().nextInt()
-                        text = "add"
-                        onClick{
-                            poleAd += Repo(java.util.Random().nextLong(), "blabl", "login", 10, "description", "name")
-                        }
-                    }
-
-                    lv.onScrollChange {
-                        _, _, _, _, _ ->
-                        if(!lv.canScrollVertically(1)) {
-                            if (poleAd.bl.not()) {
-                                poleAd.nextPage()
-                                println("Lunch loading now")
-                                poleAd.bl = true
-                            }
-                        }
+                lv.onScrollChange { _, _, _, _, _ ->
+                    if (!lv.canScrollVertically(1) and repoListingAdapter.bl.not()) {
+                            repoListingAdapter.nextPage()
+                            println("Lunch loading now")
+                            repoListingAdapter.bl = true
                     }
                 }
+            }
         }
 }
 
-class PoleAdapter(private val lv: ListView) : BaseAdapter() {
+class RepoListingAdapter(private val lv: ListView) : BaseAdapter() {
     private val list: MutableList<Repo> = MutableList<Repo>(0, {index -> Repo(0L, "","",0,"","")})
 
     private var gitUrl:String = ""
@@ -62,6 +51,7 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
         initDataExtraction()
         extractData()
     }
+
     private fun initDataExtraction(date: String=this.defaultDate)
     {
         this.defaultDate= date
@@ -74,24 +64,17 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
 
     private fun extractData()
     {
-        Fuel.get(this.gitUrl)
-                .responseString { _, response, _ ->
+        val me = this
+        doAsync {
+            Fuel.get(me.gitUrl)
+                    .responseString { _, response, _ ->
 
-                    val mapper: ObjectMapper = jacksonObjectMapper()
+                        val mapper: ObjectMapper = jacksonObjectMapper()
 
-                    val data:MyData = mapper.readValue(src = response.data)
-                    this.buildRepoCards(data = data)
-
-                    //println("hello")
-
-                    /*val (bytes, error) = result
-                    if (bytes != null) {
-                        //println(bytes)
-                        //println(error)
+                        val data: MyData = mapper.readValue(src = response.data)
+                        uiThread{me.buildRepoCards(data = data)}
                     }
-                    //Thread.sleep(500)*/
-
-                }
+        }
     }
     //Building repoCards based on extracted data from Github
     private fun buildRepoCards(data:MyData) //: ArrayList<Repo>
@@ -99,10 +82,9 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
         val newLstData:MutableList<Repo> = MutableList<Repo>(0, {index -> Repo(0L, "","",0,"","")})
 
         for (item:Map<String, Any?> in data.items) {
-
-            val name:String? = item.get("name") as String?
-            val description:String? = item.get("description") as String?
-            val stargazersCount:Int? = item.get("stargazers_count") as Int?
+            val name:String? = item["name"] as String?
+            val description:String? = item["description"] as String?
+            val stargazersCount:Int? = item["stargazers_count"] as Int?
             val ownerDes:Map<String, Any?> = item["owner"] as Map<String, Any?>
 
             val ownerLogin:String? = ownerDes["login"] as String?
@@ -112,10 +94,9 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
                     owner_login = ownerLogin, owner_avatar_url = ownerAvatarUrl)
             newLstData.add(newRepoCard)
         }
-        //println("change it!")
+
         this.bl = false
         this += newLstData
-
     }
     fun nextPage()
     {
@@ -124,9 +105,9 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
         this.extractData()
     }
 
-    override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
-        val repo = getItem(p0)
-        return with(p2!!.context){
+    override fun getView(position: Int, p1: View?, parent: ViewGroup?): View {
+        val repo = getItem(position)
+        return with(parent!!.context){
             linearLayout {
                 orientation = LinearLayout.VERTICAL
                 id = java.util.Random().nextInt()
@@ -144,9 +125,11 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
                 linearLayout {
                     val avatar = imageView() {
                         id = java.util.Random().nextInt()
+
                         //padding = dip(5)
                         //margin = dip(5)
-                    }
+                    }.lparams(width = 150 ,height = 150)
+
                     Picasso.with(this@with.ctx)
                             .load(repo.owner_avatar_url)
                             .into(avatar)
@@ -168,14 +151,14 @@ class PoleAdapter(private val lv: ListView) : BaseAdapter() {
         }
     }
 
-    override fun getItem(p0: Int): Repo = list[p0]
+    override fun getItem(position: Int): Repo = list[position]
 
-    override fun getItemId(p0: Int): Long = getItem(p0).id
+    override fun getItemId(position: Int): Long = getItem(position).id
 
     override fun getCount(): Int = list.size
 
     private operator fun plusAssign(listRepo: MutableList<Repo>) {
-        listRepo.forEach{repo -> list.add(repo.copy())}
+        list.addAll(listRepo)
         println("+ list: ${list.size}")
         notifyDataSetChanged()
         lv.invalidate()
